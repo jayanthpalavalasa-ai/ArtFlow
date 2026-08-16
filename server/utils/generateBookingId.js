@@ -4,7 +4,7 @@ async function generateBookingId() {
   const counter = await Counter.findOneAndUpdate(
     { name: 'bookingId' },
     { $inc: { value: 1 } },
-    { new: true, upsert: true }
+    { returnDocument: 'after', upsert: true }
   );
 
   const year = new Date().getFullYear();

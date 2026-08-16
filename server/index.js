@@ -4,7 +4,8 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const Booking = require('./models/Booking');
 const generateBookingId = require('./utils/generateBookingId');
-const { getPrice} = require('./utils/pricing');
+const { getPrice } = require('./utils/pricing');
+const upload = require('./config/multer');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,8 +17,8 @@ app.get('/', (req, res) => {
   res.send('ArtFlow API is running');
 });
 
-app.post('/api/bookings', async (req, res)=>{
-  try{
+app.post('/api/bookings', upload.single('image'), async (req, res) => {
+  try {
     const {
       customerName,
       customerPhone,
@@ -25,14 +26,12 @@ app.post('/api/bookings', async (req, res)=>{
       size,
       numberOfPeople,
       preferredDeadline,
-      imageUrl,
-
     } = req.body;
 
-    if(!customerName || !customerPhone || !artworkType || !size || !imageUrl){
-      return res.status(400).json({ error: 'Missing required fields' });
+  
+    if (!customerName || !customerPhone || !artworkType || !size || !req.file) {
+      return res.status(400).json({ error: 'Missing required fields or image.' });
     }
-
 
     const price = getPrice(size, numberOfPeople || 1);
     const bookingId = await generateBookingId();
@@ -47,19 +46,18 @@ app.post('/api/bookings', async (req, res)=>{
       totalPrice: price,
       requiresPriceConsultation: price === null,
       preferredDeadline,
-      images: [{ url: imageUrl }],
+      images: [{ url: req.file.secure_url }],
     });
+
     res.status(201).json(booking);
-  }catch(err){
+  } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-
-
-app.get('/api/bookings', async (req, res)=>{
+app.get('/api/bookings', async (req, res) => {
   try {
-    const bookings = await Booking.find().sort({createdAt : -1});
+    const bookings = await Booking.find().sort({ createdAt: -1 });
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -70,7 +68,7 @@ app.get('/api/bookings/:bookingId', async (req, res) => {
   try {
     const booking = await Booking.findOne({ bookingId: req.params.bookingId });
     if (!booking) {
-      return res.status(404).json({ error: 'Booking not found' });
+      return res.status(404).json({ error: 'Booking not found.' });
     }
     res.json(booking);
   } catch (err) {
