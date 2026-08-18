@@ -8,6 +8,9 @@ const imageSchema = new mongoose.Schema({
     enum: ['pending', 'accepted', 'rejected'],
     default: 'pending',
   },
+  reviewNote:{
+    type: String,
+  }
 });
 
 const bookingSchema = new mongoose.Schema(
@@ -54,6 +57,9 @@ const bookingSchema = new mongoose.Schema(
       ],
       default: 'pending_review',
     },
+    completedArtworkUrl: {
+  type: String,
+},
     payment: {
       depositAmount: { type: Number },
       depositPaid: { type: Boolean, default: false },
