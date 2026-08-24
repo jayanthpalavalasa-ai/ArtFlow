@@ -1,14 +1,29 @@
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { Resend } = require('resend');
+
 const Booking = require('./models/Booking');
+const Artist = require('./models/Artist');
+const Customer = require('./models/Customer');
+
 const generateBookingId = require('./utils/generateBookingId');
 const { getPrice } = require('./utils/Pricing');
+
 const upload = require('./config/multer');
-const jwt = require('jsonwebtoken');
-const Artist = require('./models/Artist');
+
 const requireAuth = require('./middleware/auth');
+
+const {
+  optionalAuth,
+  requireCustomerAuth,
+} = require('./middleware/customerAuth');
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,7 +70,126 @@ app.post('/api/auth/login', async(req, res)=>{
   }
 });
 
-app.post('/api/bookings', upload.single('image'), async (req, res) => {
+// adding customer auth;
+app.post('/api/auth/customer/signup', async (req, res) => {
+  try {
+   const { name, email, password } = req.body;
+
+const normalizedEmail = email?.toLowerCase().trim();
+
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        error: 'Name, email and password are required'
+      });
+    }
+
+    // Check if customer already exists
+    const existingCustomer = await Customer.findOne({
+  email: normalizedEmail,
+});
+
+    if (existingCustomer) {
+      return res.status(409).json({
+        error: 'An account with this email already exists'
+      });
+    }
+
+
+
+  const customer = await Customer.create({
+  name,
+  email: normalizedEmail,
+  password
+});
+
+    // Create customer JWT
+    const token = jwt.sign(
+      {
+        customerId: customer._id
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Return token + customer info
+    res.status(201).json({
+      token,
+      customer: {
+        id: customer._id,
+        name: customer.name,
+        email: customer.email
+      }
+    });
+
+  } catch (err) {
+    console.error('Customer signup error:', err);
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+//customer auth ends.
+// adding route to customer login.
+app.post('/api/auth/customer/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        error: 'Email and password are required',
+      });
+    }
+
+    const customer = await Customer.findOne({ email });
+
+    if (!customer) {
+      return res.status(401).json({
+        error: 'Invalid email or password',
+      });
+    }
+
+    const isMatch = await customer.comparePassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        error: 'Invalid email or password',
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        customerId: customer._id,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '7d',
+      }
+    );
+
+    res.json({
+      token,
+      customer: {
+        id: customer._id,
+        name: customer.name,
+        email: customer.email,
+      },
+    });
+
+  } catch (err) {
+    console.error('Customer login error:', err);
+
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+});
+// customer login end.
+
+app.post(
+  '/api/bookings',optionalAuth,upload.single('image'),async (req, res) =>  {
   try {
     const {
       customerName,
@@ -73,9 +207,10 @@ app.post('/api/bookings', upload.single('image'), async (req, res) => {
 
     const price = getPrice(size, numberOfPeople || 1);
     const bookingId = await generateBookingId();
-
+console.log('BOOKING CUSTOMER ID:', req.customerId);
     const booking = await Booking.create({
       bookingId,
+      customerId: req.customerId || null,
       customerName,
       customerPhone,
       artworkType,
@@ -538,6 +673,219 @@ app.patch(
     }
   }
 );
+app.get(
+  '/api/customers/me',
+  requireCustomerAuth,
+  async (req, res) => {
+    try {
+      const customer = await Customer.findById(req.customerId).select(
+        '-password'
+      );
+
+      if (!customer) {
+        return res.status(404).json({
+          error: 'Customer not found.',
+        });
+      }
+
+      res.json({
+        customer: {
+          id: customer._id,
+          name: customer.name,
+          email: customer.email,
+        },
+      });
+    } catch (err) {
+      console.error('Get current customer error:', err);
+
+      res.status(500).json({
+        error: 'Failed to fetch customer.',
+      });
+    }
+  }
+);
+app.get(
+  '/api/customers/me/bookings',
+  requireCustomerAuth,
+  async (req, res) => {
+    try {
+      const bookings = await Booking.find({
+        customerId: req.customerId,
+      }).sort({ createdAt: -1 });
+
+      res.json(bookings);
+    } catch (err) {
+      console.error('Get customer bookings error:', err);
+
+      res.status(500).json({
+        error: 'Failed to fetch bookings.',
+      });
+    }
+  }
+);
+
+
+app.post('/api/auth/customer/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: 'Email is required',
+      });
+    }
+
+    const customer = await Customer.findOne({
+      email: email.toLowerCase().trim(),
+    });
+
+    // Don't reveal whether the account exists
+    if (!customer) {
+      return res.json({
+        message:
+          'If an account with that email exists, a password reset link has been sent.',
+      });
+    }
+
+    // Generate secure reset token
+    const resetToken = customer.createPasswordResetToken();
+
+    await customer.save();
+
+    // Development frontend URL
+    const resetUrl =
+      `http://localhost:5173/reset-password/${resetToken}`;
+
+    const { data, error } = await resend.emails.send({
+      from: "Eswar Tallapudi's Art <onboarding@resend.dev>",
+      to: [customer.email],
+      subject: "Reset your Eswar Tallapudi's Art password",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 30px;">
+          
+          <h2>Password Reset</h2>
+
+          <p>Hello ${customer.name},</p>
+
+          <p>
+            We received a request to reset the password for your
+            Eswar Tallapudi's Art account.
+          </p>
+
+          <p>
+            Click the button below to create a new password:
+          </p>
+
+          <p>
+            <a
+              href="${resetUrl}"
+              style="
+                display: inline-block;
+                padding: 12px 22px;
+                background: #111;
+                color: #fff;
+                text-decoration: none;
+                border-radius: 6px;
+              "
+            >
+              Reset Password
+            </a>
+          </p>
+
+          <p>
+            This link will expire in <strong>15 minutes</strong>.
+          </p>
+
+          <p>
+            If you didn't request a password reset, you can safely ignore
+            this email.
+          </p>
+
+          <p>
+            — Eswar Tallapudi's Art
+          </p>
+
+        </div>
+      `,
+    });
+if (error) {
+  console.error('Resend error:', error);
+
+  return res.status(500).json({
+    error: 'Failed to send password reset email.',
+  });
+}
+    console.log('Password reset email sent:', data.id);
+
+    res.json({
+      message:
+        'If an account with that email exists, a password reset link has been sent.',
+    });
+
+  } catch (err) {
+    console.error('Forgot password error:', err);
+
+    res.status(500).json({
+      error: 'Something went wrong. Please try again later.',
+    });
+  }
+});
+
+
+
+app.post('/api/auth/customer/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        error: 'Reset token and new password are required.',
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters long.',
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const customer = await Customer.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!customer) {
+      return res.status(400).json({
+        error: 'Reset token is invalid or expired.',
+      });
+    }
+
+    customer.password = newPassword;
+
+    // Invalidate the reset token immediately
+    customer.resetPasswordToken = null;
+    customer.resetPasswordExpires = null;
+
+    await customer.save();
+
+    res.json({
+      message: 'Password has been reset successfully.',
+    });
+
+  } catch (err) {
+    console.error('Reset password error:', err);
+
+    res.status(500).json({
+      error: 'Something went wrong. Please try again later.',
+    });
+  }
+});
+
 
 
 mongoose.connect(process.env.MONGO_URI)

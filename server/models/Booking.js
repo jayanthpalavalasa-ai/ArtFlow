@@ -16,6 +16,12 @@ const imageSchema = new mongoose.Schema({
 const bookingSchema = new mongoose.Schema(
   {
     bookingId: { type: String, required: true, unique: true },
+   //added Customer.js which is Customer Id.
+    customerId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Customer',
+  default: null,
+},
     customerName: { type: String, required: true },
     customerPhone: { type: String, required: true },
     artworkType: {
