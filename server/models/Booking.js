@@ -22,6 +22,12 @@ const bookingSchema = new mongoose.Schema(
   ref: 'Customer',
   default: null,
 },
+    customerEmail: {
+  type: String,
+  lowercase: true,
+  trim: true,
+  default: null,
+},
     customerName: { type: String, required: true },
     customerPhone: { type: String, required: true },
     artworkType: {
@@ -29,6 +35,7 @@ const bookingSchema = new mongoose.Schema(
       enum: ['pencil', 'blood'],
       required: true,
     },
+    
     size: {
       type: String,
       enum: ['A4', 'A3', 'A2'],
@@ -63,6 +70,17 @@ const bookingSchema = new mongoose.Schema(
       ],
       default: 'pending_review',
     },
+    artistNote: {
+  type: String,
+  trim: true,
+  default: '',
+},
+
+description: {
+  type: String,
+  trim: true,
+  default: '',
+},
     completedArtworkUrl: {
   type: String,
 },

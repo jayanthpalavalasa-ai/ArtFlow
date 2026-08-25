@@ -188,45 +188,130 @@ app.post('/api/auth/customer/login', async (req, res) => {
 });
 // customer login end.
 
+
 app.post(
-  '/api/bookings',optionalAuth,upload.single('image'),async (req, res) =>  {
-  try {
-    const {
-      customerName,
-      customerPhone,
-      artworkType,
-      size,
-      numberOfPeople,
-      preferredDeadline,
-    } = req.body;
+  '/api/bookings',
+  optionalAuth,
+  upload.single('image'),
+  async (req, res) => {
+    try {
+     const {
+  customerName,
+  customerEmail,
+  customerPhone,
+  artistNote,
+  description,
+  artworkType,
+  size,
+  numberOfPeople,
+  preferredDeadline,
+} = req.body;
 
-  
-    if (!customerName || !customerPhone || !artworkType || !size || !req.file) {
-      return res.status(400).json({ error: 'Missing required fields or image.' });
+      if (
+        !customerName ||
+        !customerPhone ||
+        !artworkType ||
+        !size ||
+        !req.file
+      ) {
+        return res.status(400).json({
+          error: 'Missing required fields or image.',
+        });
+      }
+
+      // Determine the booking email
+      let bookingEmail = null;
+
+      if (req.customerId) {
+        // Logged-in customer:
+        // Get the trusted email directly from MongoDB.
+        const customer = await Customer.findById(req.customerId).select(
+          'email'
+        );
+
+        if (!customer) {
+          return res.status(401).json({
+            error: 'Customer account could not be found.',
+          });
+        }
+
+        bookingEmail = customer.email;
+      } else {
+        // Guest:
+        // Use the email supplied by the commission form.
+        if (!customerEmail) {
+          return res.status(400).json({
+            error: 'Email is required for guest bookings.',
+          });
+        }
+
+        bookingEmail = customerEmail.trim().toLowerCase();
+      }
+
+      const price = getPrice(
+        size,
+        numberOfPeople || 1
+      );
+
+      const bookingId = await generateBookingId();
+
+      console.log(
+        'BOOKING CUSTOMER ID:',
+        req.customerId || 'guest'
+      );
+
+      console.log(
+        'BOOKING EMAIL:',
+        bookingEmail
+      );
+
+      const booking = await Booking.create({
+        bookingId,
+
+        customerId: req.customerId || null,
+
+        customerEmail: bookingEmail,
+
+        customerName,
+
+        customerPhone,
+
+        
+        artistNote: artistNote?.trim() || '',
+        description: description?.trim() || '',
+
+
+        artworkType,
+
+        size,
+
+        numberOfPeople: numberOfPeople || 1,
+
+        totalPrice: price,
+
+        requiresPriceConsultation: price === null,
+
+        preferredDeadline,
+
+        images: [
+          {
+            url: req.file.secure_url,
+          },
+        ],
+      });
+
+      res.status(201).json(booking);
+
+    } catch (err) {
+      console.error('Booking creation error:', err);
+
+      res.status(400).json({
+        error: err.message,
+      });
     }
-
-    const price = getPrice(size, numberOfPeople || 1);
-    const bookingId = await generateBookingId();
-console.log('BOOKING CUSTOMER ID:', req.customerId);
-    const booking = await Booking.create({
-      bookingId,
-      customerId: req.customerId || null,
-      customerName,
-      customerPhone,
-      artworkType,
-      size,
-      numberOfPeople: numberOfPeople || 1,
-      totalPrice: price,
-      requiresPriceConsultation: price === null,
-      preferredDeadline,
-      images: [{ url: req.file.secure_url }],
-    });
-
-    res.status(201).json(booking);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
   }
-});
+);
+
 
 app.get('/api/bookings',requireAuth, async (req, res) => {
   try {
@@ -237,17 +322,77 @@ app.get('/api/bookings',requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/bookings/:bookingId', async (req, res) => {
-  try {
-    const booking = await Booking.findOne({ bookingId: req.params.bookingId });
-    if (!booking) {
-      return res.status(404).json({ error: 'Booking not found.' });
+app.get(
+  '/api/bookings/:bookingId',
+  optionalAuth,
+  async (req, res) => {
+    try {
+      const booking = await Booking.findOne({
+        bookingId: req.params.bookingId,
+      });
+
+      if (!booking) {
+        return res.status(404).json({
+          error: 'Booking not found.',
+        });
+      }
+
+      // Guest booking
+      // Anyone can track it.
+      if (!booking.customerId) {
+        return res.json({
+          bookingId: booking.bookingId,
+          customerName: booking.customerName,
+          artworkType: booking.artworkType,
+          size: booking.size,
+          numberOfPeople: booking.numberOfPeople,
+          totalPrice: booking.totalPrice,
+          requiresPriceConsultation: booking.requiresPriceConsultation,
+          preferredDeadline: booking.preferredDeadline,
+          status: booking.status,
+        });
+      }
+
+      // Account booking
+      // Must be logged in.
+      if (!req.customerId) {
+        return res.status(401).json({
+          error: 'Please sign in to track this booking.',
+        });
+      }
+
+      // Account booking belongs to another customer.
+      if (
+        booking.customerId.toString() !==
+        req.customerId.toString()
+      ) {
+        return res.status(403).json({
+          error: 'You do not have access to this booking.',
+        });
+      }
+
+      // Owner of the booking.
+      res.json({
+        bookingId: booking.bookingId,
+        customerName: booking.customerName,
+        artworkType: booking.artworkType,
+        size: booking.size,
+        numberOfPeople: booking.numberOfPeople,
+        totalPrice: booking.totalPrice,
+        requiresPriceConsultation: booking.requiresPriceConsultation,
+        preferredDeadline: booking.preferredDeadline,
+        status: booking.status,
+      });
+
+    } catch (err) {
+      console.error('Track booking error:', err);
+
+      res.status(500).json({
+        error: 'Failed to retrieve booking.',
+      });
     }
-    res.json(booking);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
-});
+);
 
 app.patch('/api/bookings/:bookingId/accept-image', requireAuth, async (req, res) => {
   try {
@@ -719,6 +864,67 @@ app.get(
 
       res.status(500).json({
         error: 'Failed to fetch bookings.',
+      });
+    }
+  }
+);
+app.post(
+  '/api/customers/me/claim-booking',
+  requireCustomerAuth,
+  async (req, res) => {
+    try {
+      const { bookingId } = req.body;
+
+      if (!bookingId) {
+        return res.status(400).json({
+          error: 'Booking ID is required.',
+        });
+      }
+
+      // Get the logged-in customer's trusted email
+      const customer = await Customer.findById(req.customerId).select(
+        'email'
+      );
+
+      if (!customer) {
+        return res.status(401).json({
+          error: 'Customer account could not be found.',
+        });
+      }
+
+      // Find a guest booking only
+      const booking = await Booking.findOne({
+        bookingId: bookingId.trim(),
+        customerId: null,
+      });
+
+      // Don't reveal whether a booking exists if the email doesn't match
+      if (
+        !booking ||
+        !booking.customerEmail ||
+        booking.customerEmail.toLowerCase() !==
+          customer.email.toLowerCase()
+      ) {
+        return res.status(404).json({
+          error:
+            'We could not add that booking to your account. Please check the booking ID.',
+        });
+      }
+
+      // Claim the booking
+      booking.customerId = req.customerId;
+
+      await booking.save();
+
+      res.json({
+        message: 'Booking added to your account successfully.',
+        booking,
+      });
+    } catch (err) {
+      console.error('Claim booking error:', err);
+
+      res.status(500).json({
+        error: 'Failed to add booking to your account.',
       });
     }
   }
