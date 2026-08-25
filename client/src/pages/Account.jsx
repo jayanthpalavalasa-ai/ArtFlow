@@ -1,6 +1,4 @@
-import Navbar from '../components/Navbar';
-
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,6 +11,12 @@ function Account() {
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [error, setError] = useState('');
+  const [claimBookingId, setClaimBookingId] = useState('');
+const [claimLoading, setClaimLoading] = useState(false);
+const [claimMessage, setClaimMessage] = useState('');
+const [claimError, setClaimError] = useState('');
+
+
 
   useEffect(() => {
     if (authLoading) return;
@@ -54,6 +58,74 @@ function Account() {
     fetchBookings();
   }, [customer, authLoading, navigate]);
 
+  const handleClaimBooking = async (e) => {
+  e.preventDefault();
+
+  setClaimMessage('');
+  setClaimError('');
+
+  if (!claimBookingId.trim()) {
+    setClaimError('Please enter your booking ID.');
+    return;
+  }
+
+  try {
+    setClaimLoading(true);
+
+    const token = localStorage.getItem('customerToken');
+
+    const response = await fetch(
+      `${API_URL}/api/customers/me/claim-booking`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          bookingId: claimBookingId.trim(),
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Could not add this booking.'
+      );
+    }
+
+    setClaimMessage(
+      'Booking added to your account successfully.'
+    );
+
+    setClaimBookingId('');
+
+    // Refresh My Bookings
+    const bookingsResponse = await fetch(
+      `${API_URL}/api/customers/me/bookings`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const bookingsData = await bookingsResponse.json();
+
+    if (bookingsResponse.ok) {
+      setBookings(bookingsData);
+    }
+
+  } catch (err) {
+    setClaimError(err.message);
+  } finally {
+    setClaimLoading(false);
+  }
+};
+
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -61,8 +133,8 @@ function Account() {
 
   if (authLoading) {
     return (
-      <main className="min-h-screen bg-[#0B0B0B] text-white flex items-center justify-center">
-        <p className="text-[#B8B3AA]">
+      <main className="page-shell flex items-center justify-center">
+        <p className="text-paper-mute">
           Loading account...
         </p>
       </main>
@@ -72,58 +144,55 @@ function Account() {
   if (!customer) {
     return null;
   }
-return (
-  <>
-    <Navbar />
 
-    <main className="min-h-screen bg-[#0B0B0B] text-white px-6 pt-32 pb-16">
+  return (
+    <main className="page-shell">
       <div className="max-w-5xl mx-auto">
 
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
           <div>
-            <p className="text-sm tracking-[0.3em] uppercase text-[#B8B3AA]">
+            <p className="kicker">
               Your Account
             </p>
 
-            <h1 className="mt-3 text-4xl md:text-5xl font-serif">
+            <h1 className="page-title mt-3">
               Welcome, {customer.name}.
             </h1>
 
-            <p className="mt-3 text-[#B8B3AA]">
+            <p className="mt-3 text-sm text-paper-mute">
               {customer.email}
             </p>
           </div>
 
           <button
+            type="button"
             onClick={handleLogout}
-            className="self-start sm:self-auto border border-white/15 px-5 py-2.5 rounded-lg text-sm hover:bg-white/5 transition"
+            className="btn self-start sm:self-auto"
           >
             Log out
           </button>
         </div>
 
-        {/* Bookings */}
         <section className="mt-16">
 
           <div>
-            <p className="text-xs tracking-[0.25em] uppercase text-[#6F8499]">
+            <p className="kicker">
               Your Work
             </p>
 
-            <h2 className="mt-2 text-3xl font-serif">
+            <h2 className="section-title mt-2">
               My Bookings
             </h2>
           </div>
 
           {loadingBookings && (
-            <p className="mt-8 text-[#B8B3AA]">
+            <p className="mt-8 text-paper-mute">
               Loading your bookings...
             </p>
           )}
 
           {error && (
-            <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-300">
+            <div className="notice-error mt-8">
               {error}
             </div>
           )}
@@ -131,18 +200,19 @@ return (
           {!loadingBookings &&
             !error &&
             bookings.length === 0 && (
-              <div className="mt-8 rounded-2xl border border-white/10 bg-[#111111] p-8">
-                <h3 className="text-xl font-serif">
+              <div className="panel mt-8 p-7">
+                <h3 className="font-display text-xl">
                   No bookings yet.
                 </h3>
 
-                <p className="mt-2 text-[#B8B3AA]">
+                <p className="mt-2 text-paper-mute">
                   Ready to create something?
                 </p>
 
                 <button
+                  type="button"
                   onClick={() => navigate('/commission')}
-                  className="mt-6 bg-white text-black px-5 py-3 rounded-lg font-semibold hover:bg-[#D8D4CC] transition"
+                  className="btn-solid mt-6"
                 >
                   Start a Commission
                 </button>
@@ -152,27 +222,27 @@ return (
           {!loadingBookings &&
             !error &&
             bookings.length > 0 && (
-              <div className="mt-8 space-y-4">
+              <div className="mt-8 space-y-3">
 
                 {bookings.map((booking) => (
                   <div
                     key={booking.bookingId}
-                    className="rounded-2xl border border-white/10 bg-[#111111] p-6"
+                    className="panel p-5 sm:p-6"
                   >
 
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
 
                       <div>
-                        <p className="text-xs tracking-[0.2em] uppercase text-[#B8B3AA]">
+                        <p className="kicker">
                           Booking
                         </p>
 
-                        <h3 className="mt-1 text-xl font-serif">
+                        <h3 className="font-display mt-1 text-lg">
                           {booking.bookingId}
                         </h3>
                       </div>
 
-                      <span className="self-start rounded-full border border-[#6F8499]/30 bg-[#6F8499]/10 px-4 py-1.5 text-sm capitalize text-[#AFC0CF]">
+                      <span className="chip self-start capitalize">
                         {booking.status?.replaceAll('_', ' ')}
                       </span>
 
@@ -181,7 +251,7 @@ return (
                     <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-5 text-sm">
 
                       <div>
-                        <p className="text-[#B8B3AA]">
+                        <p className="text-paper-mute">
                           Artwork
                         </p>
 
@@ -191,7 +261,7 @@ return (
                       </div>
 
                       <div>
-                        <p className="text-[#B8B3AA]">
+                        <p className="text-paper-mute">
                           Size
                         </p>
 
@@ -201,7 +271,7 @@ return (
                       </div>
 
                       <div>
-                        <p className="text-[#B8B3AA]">
+                        <p className="text-paper-mute">
                           People
                         </p>
 
@@ -211,14 +281,14 @@ return (
                       </div>
 
                       <div>
-                        <p className="text-[#B8B3AA]">
+                        <p className="text-paper-mute">
                           Price
                         </p>
 
                         <p className="mt-1">
                           {booking.totalPrice !== null &&
                           booking.totalPrice !== undefined
-                            ? `₹${booking.totalPrice}`
+                            ?`\u20B9${booking.totalPrice}`
                             : 'To be confirmed'}
                         </p>
                       </div>
@@ -233,21 +303,86 @@ return (
 
         </section>
 
-        {/* Account details */}
-        <section className="mt-16 border-t border-white/10 pt-10">
+        <section className="mt-16 border-t border-line pt-10">
 
-          <p className="text-xs tracking-[0.25em] uppercase text-[#6F8499]">
+          <p className="kicker">
+            Previous Booking
+          </p>
+
+          <h2 className="section-title mt-2">
+            Add an earlier booking
+          </h2>
+
+          <p className="lede mt-3">
+            If you placed a commission before creating your account,
+            you can add that booking to your account using its booking ID.
+          </p>
+
+          <form
+            onSubmit={handleClaimBooking}
+            className="panel mt-6 p-5 sm:p-6"
+          >
+
+            <label
+              htmlFor="claimBookingId"
+              className="label"
+            >
+              Booking ID
+            </label>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+
+              <input
+                id="claimBookingId"
+                type="text"
+                value={claimBookingId}
+                onChange={(e) => setClaimBookingId(e.target.value)}
+                placeholder="AF-2026-0004"
+                className="field flex-1"
+              />
+
+              <button
+                type="submit"
+                disabled={claimLoading}
+                className="btn-solid sm:whitespace-nowrap"
+              >
+                {claimLoading
+                  ? 'Adding...'
+                  : 'Add to My Account'}
+              </button>
+
+            </div>
+
+            {claimMessage && (
+              <p className="mt-4 text-sm text-paper-mute">
+                {claimMessage}
+              </p>
+            )}
+
+            {claimError && (
+              <p className="mt-4 text-sm text-mark">
+                {claimError}
+              </p>
+            )}
+
+          </form>
+
+        </section>
+
+        <section className="mt-16 border-t border-line pt-10">
+
+          <p className="kicker">
             Account
           </p>
 
-          <h2 className="mt-2 text-3xl font-serif">
+          <h2 className="section-title mt-2">
             Account Details
           </h2>
 
-          <div className="mt-6 rounded-2xl border border-white/10 bg-[#111111] p-6 space-y-5">
+          <div className="panel mt-6 p-5 sm:p-6 space-y-5">
 
             <div>
-              <p className="text-sm text-[#B8B3AA]">
+              <p className="text-sm text-paper-mute">
                 Name
               </p>
 
@@ -257,7 +392,7 @@ return (
             </div>
 
             <div>
-              <p className="text-sm text-[#B8B3AA]">
+              <p className="text-sm text-paper-mute">
                 Email
               </p>
 
@@ -271,9 +406,8 @@ return (
         </section>
 
       </div>
-        </main>
-  </>
-);
+    </main>
+  );
 }
 
 export default Account;

@@ -68,18 +68,18 @@ function ResetPassword() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0B0B] text-white flex items-center justify-center px-6 py-20">
+    <main className="page-shell flex items-center justify-center">
       <div className="w-full max-w-md">
 
-        <p className="text-sm tracking-[0.3em] uppercase text-[#B8B3AA]">
+        <p className="kicker">
           Account
         </p>
 
-        <h1 className="mt-3 text-4xl font-serif">
+        <h1 className="page-title mt-3">
           Reset Password
         </h1>
 
-        <p className="mt-4 text-[#B8B3AA] leading-relaxed">
+        <p className="lede mt-4">
           Create a new password for your Eswar Tallapudi's Art account.
         </p>
 
@@ -89,7 +89,7 @@ function ResetPassword() {
         >
 
           <div>
-            <label className="block text-sm text-[#B8B3AA] mb-2">
+            <label className="label">
               New password
             </label>
 
@@ -99,13 +99,13 @@ function ResetPassword() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full rounded-lg border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#6F8499]"
+              className="field"
               placeholder="Enter new password"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-[#B8B3AA] mb-2">
+            <label className="label">
               Confirm password
             </label>
 
@@ -115,19 +115,19 @@ function ResetPassword() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full rounded-lg border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#6F8499]"
+              className="field"
               placeholder="Confirm new password"
             />
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div className="notice-error">
               {error}
             </div>
           )}
 
           {message && (
-            <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+            <div className="notice-ok">
               {message}
             </div>
           )}
@@ -135,7 +135,7 @@ function ResetPassword() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-white px-5 py-3 font-semibold text-black transition hover:bg-[#D8D4CC] disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-solid w-full"
           >
             {loading ? 'Resetting...' : 'Reset Password'}
           </button>

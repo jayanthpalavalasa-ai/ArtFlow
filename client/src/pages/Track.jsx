@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 
 function Track() {
   const [bookingDetails, setBookingDetails] = useState(null);
@@ -58,24 +58,23 @@ function Track() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0B0B] text-[#F1EEE7] px-5 sm:px-8 lg:px-10 pt-32 pb-20">
+    <main className="page-shell">
 
       <div className="max-w-3xl mx-auto">
 
-        {/* Page heading */}
         <header className="max-w-2xl">
 
-          <p className="text-xs sm:text-sm tracking-[0.32em] uppercase text-[#8F9BA6]">
+          <p className="kicker">
             Track Your Artwork
           </p>
 
-          <h1 className="mt-4 font-serif text-4xl sm:text-5xl lg:text-6xl leading-[1.05]">
+          <h1 className="page-title mt-4">
             Follow the journey
             <br className="hidden sm:block" />
             of your artwork.
           </h1>
 
-          <p className="mt-6 max-w-xl text-sm sm:text-base leading-7 text-[#B8B3AA]">
+          <p className="lede mt-5">
             Enter your booking ID to see the latest status of your
             commission and its current progress.
           </p>
@@ -83,16 +82,15 @@ function Track() {
         </header>
 
 
-        {/* Tracking form */}
-        <section className="mt-12 rounded-2xl border border-white/10 bg-[#111111] p-5 sm:p-7">
+        <section className="panel mt-12 p-5 sm:p-7">
 
           <div className="mb-5">
 
-            <p className="text-xs tracking-[0.25em] uppercase text-[#8F9BA6]">
+            <p className="kicker">
               Booking ID
             </p>
 
-            <h2 className="mt-2 text-xl sm:text-2xl font-medium">
+            <h2 className="font-display mt-2 text-xl">
               Find your commission
             </h2>
 
@@ -111,32 +109,31 @@ function Track() {
                 setTrackingId(e.target.value);
                 setTrackingError('');
               }}
-              className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#181818] px-4 py-3.5 text-sm sm:text-base text-[#F1EEE7] placeholder:text-[#686868] outline-none focus:border-[#6F8499] transition"
+              className="field min-w-0 flex-1"
               aria-label="Booking ID"
             />
 
             <button
               type="submit"
               disabled={isLoading}
-              className="rounded-lg bg-[#F1EEE7] px-6 py-3.5 text-sm font-medium text-[#0B0B0B] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 sm:whitespace-nowrap"
+              className="btn-solid sm:whitespace-nowrap"
             >
               {isLoading ? 'Searching...' : 'Track Booking'}
             </button>
 
           </form>
 
-          <p className="mt-4 text-xs sm:text-sm text-[#686868]">
+          <p className="mt-4 text-xs text-mist">
             Your booking ID was provided when your commission was submitted.
           </p>
 
         </section>
 
 
-        {/* Error */}
         {trackingError && (
-          <section className="mt-6 rounded-xl border border-red-500/20 bg-red-500/5 px-5 py-4">
+          <section className="notice-error mt-6">
 
-            <p className="text-sm text-red-300">
+            <p className="text-sm">
               {trackingError}
             </p>
 
@@ -144,20 +141,18 @@ function Track() {
         )}
 
 
-        {/* Booking details */}
         {bookingDetails && (
           <section className="mt-10">
 
-            {/* Result heading */}
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
 
               <div>
 
-                <p className="text-xs tracking-[0.25em] uppercase text-[#8F9BA6]">
+                <p className="kicker">
                   Commission
                 </p>
 
-                <h2 className="mt-2 text-3xl sm:text-4xl font-serif">
+                <h2 className="section-title mt-2">
                   {bookingDetails.bookingId}
                 </h2>
 
@@ -165,7 +160,7 @@ function Track() {
 
               <div className="self-start sm:self-auto">
 
-                <span className="inline-flex rounded-full border border-[#6F8499]/30 bg-[#6F8499]/10 px-4 py-2 text-sm text-[#AFC0CF]">
+                <span className="chip">
                   {getStatusLabel(bookingDetails.status)}
                 </span>
 
@@ -174,84 +169,77 @@ function Track() {
             </div>
 
 
-            {/* Details card */}
-            <div className="mt-6 rounded-2xl border border-white/10 bg-[#111111] overflow-hidden">
+            <div className="panel mt-6 overflow-hidden">
 
               <div className="p-5 sm:p-7">
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-7">
 
-                  {/* Customer */}
                   <div>
-                    <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                    <p className="kicker">
                       Customer
                     </p>
 
-                    <p className="mt-2 text-sm sm:text-base text-[#F1EEE7]">
+                    <p className="mt-2 text-sm text-paper">
                       {bookingDetails.customerName || 'Guest'}
                     </p>
                   </div>
 
 
-                  {/* Artwork */}
                   <div>
-                    <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                    <p className="kicker">
                       Artwork
                     </p>
 
-                    <p className="mt-2 text-sm sm:text-base capitalize text-[#F1EEE7]">
-                      {bookingDetails.artworkType || '—'}
+                    <p className="mt-2 text-sm capitalize text-paper">
+                      {bookingDetails.artworkType || 'â€”'}
                     </p>
                   </div>
 
 
-                  {/* Size */}
                   <div>
-                    <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                    <p className="kicker">
                       Size
                     </p>
 
-                    <p className="mt-2 text-sm sm:text-base text-[#F1EEE7]">
-                      {bookingDetails.size || '—'}
+                    <p className="mt-2 text-sm text-paper">
+                      {bookingDetails.size || 'â€”'}
                     </p>
                   </div>
 
 
-                  {/* People */}
                   <div>
-                    <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                    <p className="kicker">
                       People
                     </p>
 
-                    <p className="mt-2 text-sm sm:text-base text-[#F1EEE7]">
-                      {bookingDetails.numberOfPeople || '—'}
+                    <p className="mt-2 text-sm text-paper">
+                      {bookingDetails.numberOfPeople || 'â€”'}
                     </p>
                   </div>
 
 
-                  {/* Price */}
                   <div>
-                    <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                    <p className="kicker">
                       Total Price
                     </p>
 
-                    <p className="mt-2 text-sm sm:text-base text-[#F1EEE7]">
-                      {bookingDetails.totalPrice !== null &&
-                      bookingDetails.totalPrice !== undefined
-                        ? `₹${bookingDetails.totalPrice}`
-                        : 'To be confirmed'}
-                    </p>
+                   <p className="mt-2 text-sm text-paper">
+  {bookingDetails.totalPrice !== null &&
+  bookingDetails.totalPrice !== undefined
+    ? `\u20B9${bookingDetails.totalPrice}`
+    : 'To be confirmed'}
+</p>
                   </div>
 
 
-                  {/* Deadline */}
                   {bookingDetails.preferredDeadline && (
                     <div>
-                      <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                      <p className="kicker">
                         Preferred Deadline
                       </p>
 
-                      <p className="mt-2 text-sm sm:text-base text-[#F1EEE7]">
+                      <p className="mt-2 text-sm text-paper">
                         {bookingDetails.preferredDeadline}
                       </p>
                     </div>
@@ -262,14 +250,13 @@ function Track() {
               </div>
 
 
-              {/* Status footer */}
-              <div className="border-t border-white/10 px-5 sm:px-7 py-5">
+              <div className="border-t border-line px-5 sm:px-7 py-5">
 
-                <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                <p className="kicker">
                   Current Status
                 </p>
 
-                <p className="mt-2 text-base sm:text-lg text-[#AFC0CF]">
+                <p className="mt-2 text-base text-accent">
                   {getStatusLabel(bookingDetails.status)}
                 </p>
 
@@ -281,13 +268,12 @@ function Track() {
         )}
 
 
-        {/* Initial state */}
         {!bookingDetails &&
           !trackingError &&
           !isLoading && (
-            <div className="mt-12 border-t border-white/10 pt-8">
+            <div className="mt-12 border-t border-line pt-8">
 
-              <p className="text-sm leading-6 text-[#686868]">
+              <p className="text-sm leading-6 text-mist">
                 Enter your booking ID above to view your commission details.
               </p>
 

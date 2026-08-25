@@ -3,9 +3,8 @@ import Navbar from './Navbar';
 
 function SiteLayout() {
   return (
-    <div className="min-h-screen bg-[#0B0B0B] text-[#F1EEE7]">
+    <div className="min-h-screen bg-ink text-paper font-sans">
       <Navbar />
-
       <Outlet />
     </div>
   );

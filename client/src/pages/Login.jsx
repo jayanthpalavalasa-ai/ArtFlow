@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-
 function Login() {
   const { login } = useAuth();
 
@@ -24,8 +23,6 @@ function Login() {
     try {
       await login(email, password);
 
-      // If the user was redirected here from somewhere,
-      // return them there. Otherwise go to account.
       const destination =
         location.state?.from || '/account';
 
@@ -36,23 +33,20 @@ function Login() {
       setLoading(false);
     }
   };
-return (
- 
 
-    <main className="min-h-screen bg-[#0B0B0B] text-white flex items-center justify-center px-6 pt-32 pb-20">
-      
-      
+  return (
+    <main className="page-shell flex items-center justify-center">
       <div className="w-full max-w-md">
 
-        <p className="text-sm tracking-[0.3em] uppercase text-[#B8B3AA]">
+        <p className="kicker">
           Your Account
         </p>
 
-        <h1 className="mt-3 text-4xl font-serif">
+        <h1 className="page-title mt-3">
           Welcome back.
         </h1>
 
-        <p className="mt-4 text-[#B8B3AA] leading-relaxed">
+        <p className="lede mt-4">
           Sign in to view your bookings and track your artwork.
         </p>
 
@@ -62,7 +56,7 @@ return (
         >
 
           <div>
-            <label className="block text-sm text-[#B8B3AA] mb-2">
+            <label className="label">
               Email
             </label>
 
@@ -72,20 +66,20 @@ return (
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full rounded-lg border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#6F8499]"
+              className="field"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm text-[#B8B3AA]">
+              <label className="label mb-0">
                 Password
               </label>
 
               <Link
                 to="/forgot-password"
-                className="text-sm text-[#6F8499] hover:text-white transition"
+                className="text-sm text-accent hover:text-paper transition-colors duration-500"
               >
                 Forgot password?
               </Link>
@@ -97,13 +91,13 @@ return (
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full rounded-lg border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#6F8499]"
+              className="field"
               placeholder="Enter your password"
             />
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div className="notice-error">
               {error}
             </div>
           )}
@@ -111,27 +105,26 @@ return (
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-white px-5 py-3 font-semibold text-black transition hover:bg-[#D8D4CC] disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-solid w-full"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
         </form>
 
-        <p className="mt-8 text-center text-sm text-[#B8B3AA]">
+        <p className="mt-8 text-center text-sm text-paper-mute">
           Don't have an account?{' '}
           <Link
             to="/signup"
-            className="text-white hover:text-[#6F8499] transition"
+            className="text-paper hover:text-mist transition-colors duration-500"
           >
             Create one
           </Link>
         </p>
 
       </div>
-        </main>
-
-);
+    </main>
+  );
 }
 
 export default Login;

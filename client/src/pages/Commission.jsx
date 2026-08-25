@@ -1,33 +1,46 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 function Commission() {
   const { customer } = useAuth();
 
-  const [formData, setFormData] = useState({
-    customerName: '',
-    customerPhone: '',
-    artworkType: 'pencil',
-    size: 'A4',
-    numberOfPeople: 1,
-    preferredDeadline: '',
-  });
-
+ const [formData, setFormData] = useState({
+  customerName: '',
+  customerEmail: '',
+  customerPhone: '',
+  artistNote: '',
+  description: '',
+  artworkType: 'pencil',
+  size: 'A4',
+  numberOfPeople: 1,
+  preferredDeadline: '',
+});
+const resultRef = useRef(null);
   const [imageFile, setImageFile] = useState(null);
   const [bookingResult, setBookingResult] = useState(null);
   const [bookingDetails, setBookingDetails] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
-  // Automatically use the logged-in customer's name.
-  useEffect(() => {
-    if (customer?.name) {
-      setFormData((prev) => ({
-        ...prev,
-        customerName: customer.name,
-      }));
-    }
-  }, [customer]);
+  // Automatically use the logged-in customer's name, email too.
+ useEffect(() => {
+  if (customer) {
+    setFormData((prev) => ({
+      ...prev,
+      customerName: customer.name || '',
+      customerEmail: customer.email || '',
+    }));
+  }
+}, [customer]);
+
+useEffect(() => {
+  if (bookingResult && bookingDetails && resultRef.current) {
+    resultRef.current.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
+}, [bookingResult, bookingDetails]);
 
   const getWhatsAppLink = (bookingId) => {
     const phoneNumber = '919951299112';
@@ -51,25 +64,33 @@ function Commission() {
     setImageFile(file);
   };
 
-  const fetchBooking = async (bookingId) => {
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/bookings/${bookingId}`
-      );
+ const fetchBooking = async (bookingId) => {
+  try {
+    const token = localStorage.getItem('customerToken');
 
-      const result = await response.json();
-
-      if (response.ok) {
-        setBookingDetails(result);
-      } else {
-        setBookingDetails(null);
+    const response = await fetch(
+      `http://localhost:5000/api/bookings/${bookingId}`,
+      {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {},
       }
-    } catch (error) {
-      setBookingDetails(null);
-      console.error('Error fetching booking:', error);
-    }
-  };
+    );
 
+    const result = await response.json();
+
+    if (response.ok) {
+      setBookingDetails(result);
+    } else {
+      setBookingDetails(null);
+    }
+  } catch (error) {
+    setBookingDetails(null);
+    console.error('Error fetching booking:', error);
+  }
+};
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -79,9 +100,11 @@ function Commission() {
     setIsSubmitting(true);
 
     const data = new FormData();
-
     data.append('customerName', formData.customerName);
+    data.append('customerEmail', formData.customerEmail);
     data.append('customerPhone', formData.customerPhone);
+    data.append('artistNote', formData.artistNote);
+data.append('description', formData.description);
     data.append('artworkType', formData.artworkType);
     data.append('size', formData.size);
     data.append('numberOfPeople', formData.numberOfPeople);
@@ -128,24 +151,24 @@ function Commission() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0B0B] text-[#F1EEE7] px-5 sm:px-8 lg:px-10 pt-32 pb-20">
+    <main className="page-shell">
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-3xl mx-auto">
 
         {/* Page heading */}
         <header className="max-w-2xl">
 
-          <p className="text-xs sm:text-sm tracking-[0.32em] uppercase text-[#8F9BA6]">
+          <p className="kicker">
             Commission
           </p>
 
-          <h1 className="mt-4 font-serif text-4xl sm:text-5xl lg:text-6xl leading-[1.05]">
-            Create something  
+          <h1 className="page-title mt-4">
+            Create something
             <br />
               meaningful.
           </h1>
 
-          <p className="mt-6 text-sm sm:text-base leading-7 text-[#B8B3AA] max-w-xl">
+          <p className="lede mt-5">
             Tell us about the artwork you'd like to create.
             We'll review your request and get back to you with
             the next steps.
@@ -156,13 +179,13 @@ function Commission() {
 
         {/* Logged-in customer notice */}
         {customer && (
-          <div className="mt-8 rounded-xl border border-white/10 bg-[#111111] px-5 py-4">
+          <div className="mt-8 panel px-5 py-4">
 
-            <p className="text-xs tracking-[0.22em] uppercase text-[#686868]">
+            <p className="kicker">
               Signed in as
             </p>
 
-            <p className="mt-1 text-sm sm:text-base text-[#F1EEE7]">
+            <p className="mt-1 text-sm text-paper">
               {customer.name}
             </p>
 
@@ -173,16 +196,16 @@ function Commission() {
         {/* Commission form */}
         <form
           onSubmit={handleSubmit}
-          className="mt-8 rounded-2xl border border-white/10 bg-[#111111] p-5 sm:p-7 lg:p-8"
+          className="mt-8 panel p-5 sm:p-7"
         >
 
           <div className="mb-8">
 
-            <p className="text-xs tracking-[0.25em] uppercase text-[#8F9BA6]">
+            <p className="kicker">
               Your Commission
             </p>
 
-            <h2 className="mt-2 text-2xl sm:text-3xl font-serif">
+            <h2 className="section-title mt-2 text-[1.65rem]">
               Tell us what you have in mind.
             </h2>
 
@@ -197,7 +220,7 @@ function Commission() {
               <div>
                 <label
                   htmlFor="customerName"
-                  className="block text-sm text-[#B8B3AA] mb-2"
+                  className="label"
                 >
                   Your Name
                 </label>
@@ -210,15 +233,46 @@ function Commission() {
                   onChange={handleChange}
                   required
                   autoComplete="name"
-                  className="w-full rounded-lg border border-white/10 bg-[#181818] px-4 py-3.5 text-sm sm:text-base text-[#F1EEE7] placeholder:text-[#686868] outline-none focus:border-[#6F8499] transition"
+                  className="field"
                 />
               </div>
 
+              <div>
+  <label
+    htmlFor="customerEmail"
+    className="label"
+  >
+    Email Address
+  </label>
+
+  <input
+    id="customerEmail"
+    type="email"
+    name="customerEmail"
+    value={formData.customerEmail}
+    onChange={handleChange}
+    required={!customer}
+    disabled={!!customer}
+    placeholder="you@example.com"
+    autoComplete="email"
+    className="field"
+  />
+
+  {customer ? (
+    <p className="mt-2 text-xs text-mist">
+      This email is linked to your account.
+    </p>
+  ) : (
+    <p className="mt-2 text-xs text-mist">
+      We'll use this email to connect your booking if you create an account later.
+    </p>
+  )}
+</div>
 
               <div>
                 <label
                   htmlFor="customerPhone"
-                  className="block text-sm text-[#B8B3AA] mb-2"
+                  className="label"
                 >
                   Phone Number
                 </label>
@@ -232,7 +286,7 @@ function Commission() {
                   required
                   autoComplete="tel"
                   placeholder="+91..."
-                  className="w-full rounded-lg border border-white/10 bg-[#181818] px-4 py-3.5 text-sm sm:text-base text-[#F1EEE7] placeholder:text-[#686868] outline-none focus:border-[#6F8499] transition"
+                  className="field"
                 />
               </div>
 
@@ -243,7 +297,7 @@ function Commission() {
             <div>
               <label
                 htmlFor="artworkType"
-                className="block text-sm text-[#B8B3AA] mb-2"
+                className="label"
               >
                 Artwork Type
               </label>
@@ -253,7 +307,7 @@ function Commission() {
                 name="artworkType"
                 value={formData.artworkType}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-white/10 bg-[#181818] px-4 py-3.5 text-sm sm:text-base text-[#F1EEE7] outline-none focus:border-[#6F8499] transition"
+                className="field"
               >
                 <option value="pencil">
                   Pencil Portrait
@@ -272,7 +326,7 @@ function Commission() {
               <div>
                 <label
                   htmlFor="size"
-                  className="block text-sm text-[#B8B3AA] mb-2"
+                  className="label"
                 >
                   Size
                 </label>
@@ -282,7 +336,7 @@ function Commission() {
                   name="size"
                   value={formData.size}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-white/10 bg-[#181818] px-4 py-3.5 text-sm sm:text-base text-[#F1EEE7] outline-none focus:border-[#6F8499] transition"
+                  className="field"
                 >
                   <option value="A4">A4</option>
                   <option value="A3">A3</option>
@@ -296,7 +350,7 @@ function Commission() {
               <div>
                 <label
                   htmlFor="numberOfPeople"
-                  className="block text-sm text-[#B8B3AA] mb-2"
+                  className="label"
                 >
                   Number of People
                 </label>
@@ -309,7 +363,7 @@ function Commission() {
                   max="3"
                   value={formData.numberOfPeople}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-white/10 bg-[#181818] px-4 py-3.5 text-sm sm:text-base text-[#F1EEE7] outline-none focus:border-[#6F8499] transition"
+                  className="field"
                 />
               </div>
 
@@ -320,7 +374,7 @@ function Commission() {
             <div>
               <label
                 htmlFor="preferredDeadline"
-                className="block text-sm text-[#B8B3AA] mb-2"
+                className="label"
               >
                 Preferred Deadline
               </label>
@@ -331,9 +385,56 @@ function Commission() {
                 name="preferredDeadline"
                 value={formData.preferredDeadline}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-white/10 bg-[#181818] px-4 py-3.5 text-sm sm:text-base text-[#F1EEE7] outline-none focus:border-[#6F8499] transition"
+                className="field"
               />
             </div>
+
+            {/* Note to Artist */}
+<div>
+  <label
+    htmlFor="artistNote"
+    className="label"
+  >
+    Note to the Artist
+  </label>
+
+  <textarea
+    id="artistNote"
+    name="artistNote"
+    value={formData.artistNote}
+    onChange={handleChange}
+    rows={3}
+    placeholder="e.g. Happy birthday brother"
+    className="field resize-none"
+  />
+
+  <p className="mt-2 text-xs text-mist">
+    Add text, dedications, or specific instructions you'd like the artist to follow.
+  </p>
+</div>
+
+{/* Additional Description */}
+<div>
+  <label
+    htmlFor="description"
+    className="label"
+  >
+    Additional Description
+    <span className="ml-2 text-mist">
+      Optional
+    </span>
+  </label>
+
+  <textarea
+    id="description"
+    name="description"
+    value={formData.description}
+    onChange={handleChange}
+    rows={4}
+    placeholder="Tell us anything else that may help us understand your commission."
+    className="field resize-none"
+  />
+</div>
 
 
             {/* Reference image */}
@@ -341,12 +442,12 @@ function Commission() {
 
               <label
                 htmlFor="image"
-                className="block text-sm text-[#B8B3AA] mb-2"
+                className="label"
               >
                 Reference Photo
               </label>
 
-              <div className="rounded-lg border border-dashed border-white/15 bg-[#151515] p-5">
+              <div className="border border-dashed border-line bg-ink-soft p-5">
 
                 <input
                   id="image"
@@ -354,10 +455,10 @@ function Commission() {
                   accept="image/*"
                   onChange={handleImageChange}
                   required
-                  className="w-full text-sm text-[#B8B3AA] file:mr-4 file:rounded-md file:border-0 file:bg-[#F1EEE7] file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-[#0B0B0B] hover:file:bg-white"
+                  className="w-full text-sm text-paper-mute file:mr-4 file:border-0 file:bg-paper file:px-4 file:py-2 file:text-sm file:font-medium file:text-ink"
                 />
 
-                <p className="mt-3 text-xs text-[#686868]">
+                <p className="mt-3 text-xs text-mist">
                   Upload a clear reference image for the artwork.
                 </p>
 
@@ -370,7 +471,7 @@ function Commission() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg bg-[#F1EEE7] px-6 py-4 text-sm font-semibold text-[#0B0B0B] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-solid w-full"
             >
               {isSubmitting
                 ? 'Submitting commission...'
@@ -384,13 +485,13 @@ function Commission() {
 
         {/* Error */}
         {errorMessage && (
-          <section className="mt-6 rounded-xl border border-red-500/20 bg-red-500/5 px-5 py-4">
+          <section className="notice-error mt-6">
 
-            <p className="text-xs tracking-[0.2em] uppercase text-red-300">
+            <p className="kicker text-mark">
               Booking failed
             </p>
 
-            <p className="mt-2 text-sm leading-6 text-red-200">
+            <p className="mt-2 text-sm leading-6">
               {errorMessage}
             </p>
 
@@ -400,30 +501,33 @@ function Commission() {
 
         {/* Success */}
         {bookingResult && (
-          <section className="mt-10 rounded-2xl border border-white/10 bg-[#111111] overflow-hidden">
+         <section
+  ref={resultRef}
+  className="panel mt-10 scroll-mt-24 overflow-hidden"
+>
 
             <div className="p-5 sm:p-7">
 
-              <p className="text-xs tracking-[0.25em] uppercase text-[#8F9BA6]">
+              <p className="kicker">
                 Commission Received
               </p>
 
-              <h2 className="mt-3 text-2xl sm:text-3xl font-serif">
+              <h2 className="section-title mt-3 text-[1.65rem]">
                 Your request is on its way.
               </h2>
 
-              <p className="mt-4 text-sm leading-6 text-[#B8B3AA]">
+              <p className="lede mt-4">
                 Keep this booking ID safe. You can use it to track
                 your commission.
               </p>
 
-              <div className="mt-6 rounded-xl border border-white/10 bg-[#181818] px-5 py-4">
+              <div className="mt-6 border border-line bg-ink-soft px-5 py-4">
 
-                <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                <p className="kicker">
                   Booking ID
                 </p>
 
-                <p className="mt-2 font-mono text-xl sm:text-2xl tracking-wide text-[#F1EEE7]">
+                <p className="mt-2 font-mono text-lg tracking-wide text-paper">
                   {bookingResult.bookingId}
                 </p>
 
@@ -437,7 +541,7 @@ function Commission() {
 
         {/* Booking details */}
         {bookingDetails && (
-          <section className="mt-6 rounded-2xl border border-white/10 bg-[#111111] overflow-hidden">
+          <section className="panel mt-6 overflow-hidden">
 
             <div className="p-5 sm:p-7">
 
@@ -445,17 +549,17 @@ function Commission() {
 
                 <div>
 
-                  <p className="text-xs tracking-[0.25em] uppercase text-[#686868]">
+                  <p className="kicker">
                     Booking
                   </p>
 
-                  <h2 className="mt-2 text-2xl sm:text-3xl font-serif">
+                  <h2 className="section-title mt-2 text-[1.65rem]">
                     {bookingDetails.bookingId}
                   </h2>
 
                 </div>
 
-                <span className="self-start sm:self-auto inline-flex rounded-full border border-[#6F8499]/30 bg-[#6F8499]/10 px-4 py-2 text-sm text-[#AFC0CF]">
+                <span className="chip self-start sm:self-auto">
                   {bookingDetails.status
                     ?.replaceAll('_', ' ')
                     .replace(/\b\w/g, (letter) =>
@@ -469,55 +573,55 @@ function Commission() {
               <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
 
                 <div>
-                  <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                  <p className="kicker">
                     Customer
                   </p>
 
-                  <p className="mt-2 text-sm sm:text-base">
+                  <p className="mt-2 text-sm">
                     {bookingDetails.customerName}
                   </p>
                 </div>
 
 
                 <div>
-                  <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                  <p className="kicker">
                     Artwork
                   </p>
 
-                  <p className="mt-2 text-sm sm:text-base capitalize">
+                  <p className="mt-2 text-sm capitalize">
                     {bookingDetails.artworkType}
                   </p>
                 </div>
 
 
                 <div>
-                  <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                  <p className="kicker">
                     Size
                   </p>
 
-                  <p className="mt-2 text-sm sm:text-base">
+                  <p className="mt-2 text-sm">
                     {bookingDetails.size}
                   </p>
                 </div>
 
 
                 <div>
-                  <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                  <p className="kicker">
                     People
                   </p>
 
-                  <p className="mt-2 text-sm sm:text-base">
+                  <p className="mt-2 text-sm">
                     {bookingDetails.numberOfPeople}
                   </p>
                 </div>
 
 
                 <div>
-                  <p className="text-xs tracking-[0.2em] uppercase text-[#686868]">
+                  <p className="kicker">
                     Total Price
                   </p>
 
-                  <p className="mt-2 text-sm sm:text-base">
+                  <p className="mt-2 text-sm">
                     {bookingDetails.requiresPriceConsultation
                       ? 'To be confirmed'
                       : `₹${bookingDetails.totalPrice}`}
@@ -531,17 +635,17 @@ function Commission() {
 
             {/* A2 consultation */}
             {bookingDetails.requiresPriceConsultation && (
-              <div className="border-t border-white/10 bg-[#151515] px-5 sm:px-7 py-6">
+              <div className="border-t border-line bg-ink-soft px-5 sm:px-7 py-6">
 
-                <p className="text-xs tracking-[0.22em] uppercase text-[#8F9BA6]">
+                <p className="kicker">
                   Custom Pricing
                 </p>
 
-                <h3 className="mt-2 text-lg sm:text-xl font-medium">
+                <h3 className="font-display mt-2 text-lg">
                   A2 size needs a quick chat.
                 </h3>
 
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-[#B8B3AA]">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-paper-mute">
                   A2 pricing depends on the complexity of the
                   reference image. Message us on WhatsApp with
                   your booking ID and we'll confirm your price.
@@ -551,7 +655,7 @@ function Commission() {
                   href={getWhatsAppLink(bookingDetails.bookingId)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex mt-5 rounded-lg bg-[#F1EEE7] px-5 py-3 text-sm font-semibold text-[#0B0B0B] transition hover:bg-white"
+                  className="btn-solid mt-5"
                 >
                   Discuss on WhatsApp
                 </a>

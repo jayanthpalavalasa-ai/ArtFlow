@@ -255,15 +255,7 @@ app.post(
 
       const bookingId = await generateBookingId();
 
-      console.log(
-        'BOOKING CUSTOMER ID:',
-        req.customerId || 'guest'
-      );
-
-      console.log(
-        'BOOKING EMAIL:',
-        bookingEmail
-      );
+      
 
       const booking = await Booking.create({
         bookingId,

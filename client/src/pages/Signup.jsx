@@ -48,18 +48,18 @@ function Signup() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0B0B] text-white flex items-center justify-center px-6 py-20">
+    <main className="page-shell flex items-center justify-center">
       <div className="w-full max-w-md">
 
-        <p className="text-sm tracking-[0.3em] uppercase text-[#B8B3AA]">
+        <p className="kicker">
           Your Account
         </p>
 
-        <h1 className="mt-3 text-4xl font-serif">
+        <h1 className="page-title mt-3">
           Create your account.
         </h1>
 
-        <p className="mt-4 text-[#B8B3AA] leading-relaxed">
+        <p className="lede mt-4">
           Keep your commissions connected to you and track their progress
           from one place.
         </p>
@@ -70,7 +70,7 @@ function Signup() {
         >
 
           <div>
-            <label className="block text-sm text-[#B8B3AA] mb-2">
+            <label className="label">
               Name
             </label>
 
@@ -80,13 +80,13 @@ function Signup() {
               onChange={(e) => setName(e.target.value)}
               required
               autoComplete="name"
-              className="w-full rounded-lg border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#6F8499]"
+              className="field"
               placeholder="Your name"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-[#B8B3AA] mb-2">
+            <label className="label">
               Email
             </label>
 
@@ -96,13 +96,13 @@ function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full rounded-lg border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#6F8499]"
+              className="field"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-[#B8B3AA] mb-2">
+            <label className="label">
               Password
             </label>
 
@@ -113,13 +113,13 @@ function Signup() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full rounded-lg border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#6F8499]"
+              className="field"
               placeholder="At least 8 characters"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-[#B8B3AA] mb-2">
+            <label className="label">
               Confirm password
             </label>
 
@@ -130,13 +130,13 @@ function Signup() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full rounded-lg border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#6F8499]"
+              className="field"
               placeholder="Enter your password again"
             />
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div className="notice-error">
               {error}
             </div>
           )}
@@ -144,18 +144,18 @@ function Signup() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-white px-5 py-3 font-semibold text-black transition hover:bg-[#D8D4CC] disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-solid w-full"
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
 
         </form>
 
-        <p className="mt-8 text-center text-sm text-[#B8B3AA]">
+        <p className="mt-8 text-center text-sm text-paper-mute">
           Already have an account?{' '}
           <Link
             to="/login"
-            className="text-white hover:text-[#6F8499] transition"
+            className="text-paper hover:text-mist transition-colors duration-500"
           >
             Sign in
           </Link>
