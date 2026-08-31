@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ImageCropPreview from '../components/ImageCropPreview';
+
 
 function Commission() {
   const { customer } = useAuth();
@@ -14,7 +16,9 @@ function Commission() {
   size: 'A4',
   numberOfPeople: 1,
   preferredDeadline: '',
+  orientation: 'portrait',
 });
+const bookingResultRef = useRef(null);
 const resultRef = useRef(null);
   const [imageFile, setImageFile] = useState(null);
   const [bookingResult, setBookingResult] = useState(null);
@@ -59,6 +63,13 @@ useEffect(() => {
     }));
   };
 
+  const handleOrientationChange = (orientation) => {
+  setFormData((prev) => ({
+    ...prev,
+    orientation,
+    }));
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files?.[0] || null;
     setImageFile(file);
@@ -82,7 +93,14 @@ useEffect(() => {
     const result = await response.json();
 
     if (response.ok) {
-      setBookingDetails(result);
+     setBookingDetails(result);
+
+setTimeout(() => {
+  bookingResultRef.current?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
+}, 100);
     } else {
       setBookingDetails(null);
     }
@@ -438,34 +456,48 @@ data.append('description', formData.description);
 
 
             {/* Reference image */}
-            <div>
+<div>
 
-              <label
-                htmlFor="image"
-                className="label"
-              >
-                Reference Photo
-              </label>
+  <label
+    htmlFor="image"
+    className="label"
+  >
+    Reference Photo
+  </label>
 
-              <div className="border border-dashed border-line bg-ink-soft p-5">
+  <div className="border border-dashed border-line bg-ink-soft p-5">
 
-                <input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  required
-                  className="w-full text-sm text-paper-mute file:mr-4 file:border-0 file:bg-paper file:px-4 file:py-2 file:text-sm file:font-medium file:text-ink"
-                />
+    <input
+      id="image"
+      type="file"
+      accept="image/*"
+      onChange={handleImageChange}
+      required
+      className="w-full text-sm text-paper-mute file:mr-4 file:border-0 file:bg-paper file:px-4 file:py-2 file:text-sm file:font-medium file:text-ink"
+    />
 
-                <p className="mt-3 text-xs text-mist">
-                  Upload a clear reference image for the artwork.
-                </p>
+    <p className="mt-3 text-xs text-mist">
+      Upload a clear reference image for the artwork.
+    </p>
 
-              </div>
+  </div>
 
-            </div>
+  {imageFile && (
+<ImageCropPreview
+  imageFile={imageFile}
+  size={formData.size}
+  orientation={formData.orientation}
+  onSizeChange={(size) =>
+    setFormData((prev) => ({
+      ...prev,
+      size,
+    }))
+  }
+  onOrientationChange={handleOrientationChange}
+/>
+  )}
 
+</div>
 
             {/* Submit */}
             <button
@@ -541,6 +573,7 @@ data.append('description', formData.description);
 
         {/* Booking details */}
         {bookingDetails && (
+          <div ref={bookingResultRef}>
           <section className="panel mt-6 overflow-hidden">
 
             <div className="p-5 sm:p-7">
@@ -664,6 +697,7 @@ data.append('description', formData.description);
             )}
 
           </section>
+          </div>
         )}
 
       </div>
