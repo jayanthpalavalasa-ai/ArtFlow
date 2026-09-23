@@ -7,9 +7,11 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Resend } = require('resend');
 
+
 const Booking = require('./models/Booking');
 const Artist = require('./models/Artist');
 const Customer = require('./models/Customer');
+const bookingRoutes = require('./routes/bookingRoutes');
 
 const generateBookingId = require('./utils/generateBookingId');
 const { getPrice } = require('./utils/Pricing');
@@ -30,6 +32,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/bookings', bookingRoutes);
 
 app.get('/', (req, res) => {
   res.send('ArtFlow API is running');
@@ -189,7 +192,7 @@ app.post('/api/auth/customer/login', async (req, res) => {
 // customer login end.
 
 
-app.post(
+/*app.post(
   '/api/bookings',
   optionalAuth,
   upload.single('image'),
@@ -302,7 +305,7 @@ app.post(
       });
     }
   }
-);
+);*/
 
 
 app.get('/api/bookings',requireAuth, async (req, res) => {
