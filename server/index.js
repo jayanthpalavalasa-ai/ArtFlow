@@ -12,6 +12,8 @@ const Booking = require('./models/Booking');
 const Artist = require('./models/Artist');
 const Customer = require('./models/Customer');
 const bookingRoutes = require('./routes/bookingRoutes');
+const authRoutes = require('./routes/authRoutes');
+const customerRoutes = require('./routes/customerRoutes');
 
 const generateBookingId = require('./utils/generateBookingId');
 const { getPrice } = require('./utils/Pricing');
@@ -33,12 +35,14 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/customers', customerRoutes);
 
 app.get('/', (req, res) => {
   res.send('ArtFlow API is running');
 });
 
-app.post('/api/auth/login', async(req, res)=>{
+/*app.post('/api/auth/login', async(req, res)=>{
   try{
     const {email,password}= req.body;
 
@@ -71,10 +75,10 @@ app.post('/api/auth/login', async(req, res)=>{
   } catch(err){
     res.status(500).json({error: err.message});
   }
-});
+});*/
 
 // adding customer auth;
-app.post('/api/auth/customer/signup', async (req, res) => {
+/*app.post('/api/auth/customer/signup', async (req, res) => {
   try {
    const { name, email, password } = req.body;
 
@@ -132,11 +136,11 @@ const normalizedEmail = email?.toLowerCase().trim();
       error: err.message
     });
   }
-});
+});*/
 
 //customer auth ends.
 // adding route to customer login.
-app.post('/api/auth/customer/login', async (req, res) => {
+/*app.post('/api/auth/customer/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -188,7 +192,7 @@ app.post('/api/auth/customer/login', async (req, res) => {
       error: err.message,
     });
   }
-});
+});*/
 // customer login end.
 
 
@@ -308,16 +312,16 @@ app.post('/api/auth/customer/login', async (req, res) => {
 );*/
 
 
-app.get('/api/bookings',requireAuth, async (req, res) => {
+/*app.get('/api/bookings',requireAuth, async (req, res) => {
   try {
     const bookings = await Booking.find().sort({ createdAt: -1 });
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+});*/
 
-app.get(
+/*app.get(
   '/api/bookings/:bookingId',
   optionalAuth,
   async (req, res) => {
@@ -387,9 +391,9 @@ app.get(
       });
     }
   }
-);
+);*/
 
-app.patch('/api/bookings/:bookingId/accept-image', requireAuth, async (req, res) => {
+/*app.patch('/api/bookings/:bookingId/accept-image', requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findOne({
       bookingId: req.params.bookingId,
@@ -429,9 +433,9 @@ app.patch('/api/bookings/:bookingId/accept-image', requireAuth, async (req, res)
       error: err.message,
     });
   }
-});
+});*/
 
-app.patch('/api/bookings/:bookingId/reject-image', requireAuth, async (req, res) => {
+/*app.patch('/api/bookings/:bookingId/reject-image', requireAuth, async (req, res) => {
   try {
     const { reviewNote } = req.body;
 
@@ -481,8 +485,9 @@ app.patch('/api/bookings/:bookingId/reject-image', requireAuth, async (req, res)
       error: err.message,
     });
   }
-});
-app.patch(
+});*/
+
+/*app.patch(
   '/api/bookings/:bookingId/upload-replacement',
   upload.single('image'),
   async (req, res) => {
@@ -528,9 +533,9 @@ app.patch(
       });
     }
   }
-);
+);*/
 
-app.patch(
+/*app.patch(
   '/api/bookings/:bookingId/deposit-payment',
   upload.single('paymentScreenshot'),
   async (req, res) => {
@@ -580,8 +585,8 @@ app.patch(
       });
     }
   }
-);
-app.patch(
+);*/
+/*app.patch(
   '/api/bookings/:bookingId/confirm-deposit',
   requireAuth,
   async (req, res) => {
@@ -630,8 +635,8 @@ app.patch(
       });
     }
   }
-);
-app.patch(
+);*/
+/*app.patch(
   '/api/bookings/:bookingId/complete',
   requireAuth,
   upload.single('completedArtwork'),
@@ -674,8 +679,8 @@ app.patch(
       });
     }
   }
-);
-app.patch(
+);*/
+/*app.patch(
   '/api/bookings/:bookingId/final-payment',
   upload.single('paymentScreenshot'),
   async (req, res) => {
@@ -726,8 +731,8 @@ app.patch(
       });
     }
   }
-);
-app.patch(
+);*/
+/*app.patch(
   '/api/bookings/:bookingId/confirm-final-payment',
   requireAuth,
   async (req, res) => {
@@ -776,8 +781,8 @@ app.patch(
       });
     }
   }
-);
-app.patch(
+);*/
+/*app.patch(
   '/api/bookings/:bookingId/deliver',
   requireAuth,
   async (req, res) => {
@@ -812,8 +817,8 @@ app.patch(
       });
     }
   }
-);
-app.get(
+);*/
+/*app.get(
   '/api/customers/me',
   requireCustomerAuth,
   async (req, res) => {
@@ -843,8 +848,8 @@ app.get(
       });
     }
   }
-);
-app.get(
+);*/
+/*app.get(
   '/api/customers/me/bookings',
   requireCustomerAuth,
   async (req, res) => {
@@ -862,8 +867,8 @@ app.get(
       });
     }
   }
-);
-app.post(
+);*/
+/*app.post(
   '/api/customers/me/claim-booking',
   requireCustomerAuth,
   async (req, res) => {
@@ -923,10 +928,10 @@ app.post(
       });
     }
   }
-);
+);*/
 
 
-app.post('/api/auth/customer/forgot-password', async (req, res) => {
+/*app.post('/api/auth/customer/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -1031,10 +1036,10 @@ if (error) {
     });
   }
 });
+*/
 
 
-
-app.post('/api/auth/customer/reset-password', async (req, res) => {
+/*app.post('/api/auth/customer/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
@@ -1085,7 +1090,7 @@ app.post('/api/auth/customer/reset-password', async (req, res) => {
       error: 'Something went wrong. Please try again later.',
     });
   }
-});
+});*/
 
 
 
