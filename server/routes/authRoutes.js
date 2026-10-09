@@ -5,6 +5,8 @@ const { Resend } = require('resend');
 
 const Artist = require('../models/Artist');
 const Customer = require('../models/Customer');
+const requireAuth = require('../middleware/auth');
+const linkGuestBookings = require('../utils/linkGuestBookings');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const router = express.Router();
@@ -60,14 +62,49 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/artist/me', requireAuth, async (req, res) => {
+  try {
+    const artist = await Artist.findById(req.artistId)
+      .select('_id name email');
+
+    if (!artist) {
+      return res.status(404).json({
+        error: 'Artist not found.',
+      });
+    }
+
+    res.json({
+      artist: {
+        id: artist._id,
+        name: artist.name,
+        email: artist.email,
+      },
+    });
+  } catch (err) {
+    console.error('Fetch current artist error:', err);
+
+    res.status(500).json({
+      error: 'Failed to fetch artist.',
+    });
+  }
+});
+
 router.post('/customer/signup', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, phone, password } = req.body;
 
     const normalizedEmail = email?.toLowerCase().trim();
 
+    const normalizedPhone = phone.trim();
+
+if (!/^[6-9][0-9]{9}$/.test(normalizedPhone)) {
+  return res.status(400).json({
+    error: 'Phone number must be exactly 10 digits.',
+  });
+}
+
     // Validate input
-    if (!name || !email || !password) {
+    if (!name || !email || !phone || !password) {
       return res.status(400).json({
         error: 'Name, email and password are required',
       });
@@ -84,11 +121,14 @@ router.post('/customer/signup', async (req, res) => {
       });
     }
 
-    const customer = await Customer.create({
-      name,
-      email: normalizedEmail,
-      password,
-    });
+   const customer = await Customer.create({
+  name,
+  email: normalizedEmail,
+  phone: normalizedPhone,
+  password,
+});
+
+    await linkGuestBookings(customer);
 
     // Create customer JWT
     const token = jwt.sign(
@@ -274,6 +314,62 @@ router.post('/customer/reset-password', async (req, res) => {
 
     res.status(500).json({
       error: 'Something went wrong. Please try again later.',
+    });
+  }
+});
+
+router.post('/customer/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        error: 'Email and password are required',
+      });
+    }
+
+    const customer = await Customer.findOne({
+      email: email.toLowerCase().trim(),
+    });
+
+    if (!customer) {
+      return res.status(401).json({
+        error: 'Invalid email or password',
+      });
+    }
+
+    const isMatch = await customer.comparePassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        error: 'Invalid email or password',
+      });
+    }
+    await linkGuestBookings(customer);
+
+    const token = jwt.sign(
+      {
+        customerId: customer._id,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '7d',
+      }
+    );
+
+    res.json({
+      token,
+      customer: {
+        id: customer._id,
+        name: customer.name,
+        email: customer.email,
+      },
+    });
+  } catch (err) {
+    console.error('Customer login error:', err);
+
+    res.status(500).json({
+      error: err.message,
     });
   }
 });

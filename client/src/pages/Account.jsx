@@ -12,6 +12,12 @@ function Account() {
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [error, setError] = useState('');
   const [claimBookingId, setClaimBookingId] = useState('');
+
+  const [phone, setPhone] = useState('');
+const [phoneSaving, setPhoneSaving] = useState(false);
+const [phoneMessage, setPhoneMessage] = useState('');
+const [phoneError, setPhoneError] = useState('');
+
 const [claimLoading, setClaimLoading] = useState(false);
 const [claimMessage, setClaimMessage] = useState('');
 const [claimError, setClaimError] = useState('');
@@ -57,6 +63,12 @@ const [claimError, setClaimError] = useState('');
 
     fetchBookings();
   }, [customer, authLoading, navigate]);
+
+  useEffect(() => {
+  if (customer) {
+    setPhone(customer.phone || '');
+  }
+}, [customer]);
 
   const handleClaimBooking = async (e) => {
   e.preventDefault();
@@ -145,6 +157,47 @@ const [claimError, setClaimError] = useState('');
     return null;
   }
 
+
+  const handleSavePhone = async () => {
+  setPhoneMessage('');
+  setPhoneError('');
+
+  if (!/^[6-9][0-9]{9}$/.test(phone)) {
+    setPhoneError('Phone number must be exactly 10 digits.');
+    return;
+  }
+
+  try {
+    setPhoneSaving(true);
+
+    const token = localStorage.getItem('customerToken');
+
+    const response = await fetch(`${API_URL}/api/customers/me`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        phone,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update phone number.');
+    }
+
+    setPhoneMessage('Phone number updated successfully.');
+  } catch (err) {
+    setPhoneError(err.message);
+  } finally {
+    setPhoneSaving(false);
+  }
+};
+
+
   return (
     <main className="page-shell">
       <div className="max-w-5xl mx-auto">
@@ -226,9 +279,12 @@ const [claimError, setClaimError] = useState('');
 
                 {bookings.map((booking) => (
                   <div
-                    key={booking.bookingId}
-                    className="panel p-5 sm:p-6"
-                  >
+                  key={booking.bookingId}
+                  onClick={() =>
+                  navigate(`/account/bookings/${booking.bookingId}`)
+                }
+                  className="panel cursor-pointer p-5 sm:p-6 transition hover:border-paper-mute"
+>
 
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
 
@@ -371,39 +427,86 @@ const [claimError, setClaimError] = useState('');
 
         <section className="mt-16 border-t border-line pt-10">
 
-          <p className="kicker">
-            Account
-          </p>
+  <p className="kicker">
+    Account
+  </p>
 
-          <h2 className="section-title mt-2">
-            Account Details
-          </h2>
+  <h2 className="section-title mt-2">
+    Account Details
+  </h2>
 
-          <div className="panel mt-6 p-5 sm:p-6 space-y-5">
+  <div className="panel mt-6 p-5 sm:p-6 space-y-5">
 
-            <div>
-              <p className="text-sm text-paper-mute">
-                Name
-              </p>
+    <div>
+      <p className="text-sm text-paper-mute">
+        Name
+      </p>
 
-              <p className="mt-1">
-                {customer.name}
-              </p>
-            </div>
+      <p className="mt-1">
+        {customer.name}
+      </p>
+    </div>
 
-            <div>
-              <p className="text-sm text-paper-mute">
-                Email
-              </p>
+    <div>
+      <p className="text-sm text-paper-mute">
+        Email
+      </p>
 
-              <p className="mt-1">
-                {customer.email}
-              </p>
-            </div>
+      <p className="mt-1">
+        {customer.email}
+      </p>
+    </div>
 
-          </div>
+    <div>
+      <label
+        htmlFor="account-phone"
+        className="text-sm text-paper-mute"
+      >
+        Phone Number
+      </label>
 
-        </section>
+      <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+        <input
+          id="account-phone"
+          type="tel"
+          inputMode="numeric"
+          maxLength={10}
+          value={phone}
+          onChange={(e) => {
+            setPhone(e.target.value.replace(/\D/g, ''));
+            setPhoneMessage('');
+            setPhoneError('');
+          }}
+          placeholder="10-digit mobile number"
+          className="w-full rounded-lg border border-line bg-transparent px-4 py-2.5 text-sm outline-none"
+        />
+
+        <button
+         type="button"
+         disabled={phoneSaving}
+         onClick={handleSavePhone}
+          className="rounded-lg bg-paper px-5 py-2.5 text-sm font-medium text-ink disabled:opacity-50"
+        >
+          {phoneSaving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+
+      {phoneMessage && (
+        <p className="mt-2 text-sm text-green-400">
+          {phoneMessage}
+        </p>
+      )}
+
+      {phoneError && (
+        <p className="mt-2 text-sm text-red-400">
+          {phoneError}
+        </p>
+      )}
+    </div>
+
+  </div>
+
+</section>
 
       </div>
     </main>

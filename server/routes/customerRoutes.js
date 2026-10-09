@@ -3,6 +3,7 @@ const express = require('express');
 const { requireCustomerAuth } = require('../middleware/customerAuth');
 const Customer = require('../models/Customer');
 const Booking = require('../models/Booking');
+const linkGuestBookings = require('../utils/linkGuestBookings');
 
 
 const router = express.Router();
@@ -19,13 +20,14 @@ router.get('/me', requireCustomerAuth, async (req, res) => {
       });
     }
 
-    res.json({
-      customer: {
-        id: customer._id,
-        name: customer.name,
-        email: customer.email,
-      },
-    });
+   res.json({
+  customer: {
+    id: customer._id,
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone,
+  },
+});
   } catch (err) {
     console.error('Get current customer error:', err);
 
@@ -51,6 +53,31 @@ router.get('/me/bookings', requireCustomerAuth, async (req, res) => {
   }
 });
 
+router.get('/me/bookings/:bookingId',
+  requireCustomerAuth,
+  async (req, res) => {
+    try {
+      const booking = await Booking.findOne({
+        bookingId: req.params.bookingId,
+        customerId: req.customerId,
+      });
+
+      if (!booking) {
+        return res.status(404).json({
+          error: 'Booking not found.',
+        });
+      }
+
+      res.json(booking);
+    } catch (err) {
+      console.error('Get customer booking details error:', err);
+
+      res.status(500).json({
+        error: 'Failed to fetch booking details.',
+      });
+    }
+  }
+);
 
 router.post('/me/claim-booking', requireCustomerAuth, async (req, res) => {
   try {
@@ -109,4 +136,56 @@ router.post('/me/claim-booking', requireCustomerAuth, async (req, res) => {
     });
   }
 });
+
+router.patch('/me', requireCustomerAuth, async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        error: 'Phone number is required.',
+      });
+    }
+
+    const normalizedPhone = phone.trim();
+
+    if (!/^[6-9][0-9]{9}$/.test(normalizedPhone)) {
+      return res.status(400).json({
+        error: 'Phone number must be exactly 10 digits.',
+      });
+    }
+
+    const customer = await Customer.findById(req.customerId);
+
+    if (!customer) {
+      return res.status(404).json({
+        error: 'Customer not found.',
+      });
+    }
+
+    customer.phone = normalizedPhone;
+
+    await customer.save();
+
+    // Automatically attach matching old guest bookings
+    await linkGuestBookings(customer);
+
+    res.json({
+      message: 'Phone number updated successfully.',
+      customer: {
+        id: customer._id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+    });
+  } catch (err) {
+    console.error('Update customer phone error:', err);
+
+    res.status(500).json({
+      error: 'Failed to update phone number.',
+    });
+  }
+});
+
 module.exports = router;

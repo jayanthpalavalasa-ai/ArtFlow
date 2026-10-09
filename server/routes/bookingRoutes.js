@@ -2,7 +2,7 @@ const express = require('express');
 
 const router = express.Router();
 
-const {optionalAuth} = require('../middleware/customerAuth');
+const { optionalAuth, requireCustomerAuth } = require('../middleware/customerAuth');
 const requireAuth = require('../middleware/auth');
 
 const upload = require('../config/multer');
@@ -42,6 +42,13 @@ router.post(
           error: 'Missing required fields or image.',
         });
       }
+      const normalizedPhone = customerPhone.trim();
+
+if (!/^[6-9][0-9]{9}$/.test(normalizedPhone)) {
+  return res.status(400).json({
+    error: 'Phone number must be exactly 10 digits.',
+  });
+}
 
       // Determine the booking email
       let bookingEmail = null;
@@ -69,7 +76,15 @@ router.post(
           });
         }
 
-        bookingEmail = customerEmail.trim().toLowerCase();
+       bookingEmail = customerEmail.trim().toLowerCase();
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+if (!emailRegex.test(bookingEmail)) {
+  return res.status(400).json({
+    error: 'Please enter a valid email address.',
+  });
+}
       }
 
       const price = getPrice(
@@ -88,7 +103,7 @@ router.post(
 
         customerName,
 
-        customerPhone,
+        customerPhone: normalizedPhone,
 
         artistNote: artistNote?.trim() || '',
         description: description?.trim() || '',
@@ -133,6 +148,33 @@ router.get('/', requireAuth, async (req, res) => {
     });
   }
 });
+
+router.get(
+  '/artist/:bookingId',
+  requireAuth,
+  async (req, res) => {
+    try {
+      const booking = await Booking.findOne({
+        bookingId: req.params.bookingId,
+      });
+
+      if (!booking) {
+        return res.status(404).json({
+          error: 'Booking not found.',
+        });
+      }
+
+      res.json(booking);
+    } catch (err) {
+      console.error('Artist booking details error:', err);
+
+      res.status(500).json({
+        error: 'Failed to retrieve booking details.',
+      });
+    }
+  }
+);
+
 
 router.get(
   '/:bookingId',
@@ -205,6 +247,7 @@ router.get(
     }
   }
 );
+
 
 router.patch('/:bookingId/accept-image', requireAuth, async (req, res) => {
   try {
@@ -300,14 +343,14 @@ router.patch('/:bookingId/reject-image', requireAuth, async (req, res) => {
   }
 });
 
-router.patch(
-  '/:bookingId/upload-replacement',
+router.patch('/:bookingId/upload-replacement', requireCustomerAuth,
   upload.single('image'),
   async (req, res) => {
     try {
-      const booking = await Booking.findOne({
-        bookingId: req.params.bookingId,
-      });
+     const booking = await Booking.findOne({
+  bookingId: req.params.bookingId,
+  customerId: req.customerId,
+});
 
       if (!booking) {
         return res.status(404).json({
@@ -349,14 +392,15 @@ router.patch(
 );
 
 
-router.patch(
-  '/:bookingId/deposit-payment',
+router.patch('/:bookingId/deposit-payment',
+  requireCustomerAuth,
   upload.single('paymentScreenshot'),
   async (req, res) => {
     try {
       const booking = await Booking.findOne({
-        bookingId: req.params.bookingId,
-      });
+  bookingId: req.params.bookingId,
+  customerId: req.customerId,
+});
 
       if (!booking) {
         return res.status(404).json({
@@ -385,8 +429,9 @@ router.patch(
 
       const depositAmount = booking.totalPrice / 2;
 
-      booking.payment.depositAmount = depositAmount;
+     booking.payment.depositAmount = depositAmount;
       booking.payment.depositScreenshotUrl = req.file.secure_url;
+      booking.payment.depositSubmittedAt = new Date();
 
       await booking.save();
 
@@ -402,8 +447,7 @@ router.patch(
   }
 );
 
-router.patch(
-  '/:bookingId/confirm-deposit',
+router.patch('/:bookingId/confirm-deposit',
   requireAuth,
   async (req, res) => {
     try {
@@ -453,8 +497,7 @@ router.patch(
   }
 );
 
-router.patch(
-  '/:bookingId/complete',
+router.patch('/:bookingId/complete',
   requireAuth,
   upload.single('completedArtwork'),
   async (req, res) => {
@@ -497,9 +540,9 @@ router.patch(
     }
   }
 );
-
 router.patch(
   '/:bookingId/final-payment',
+  requireCustomerAuth,
   upload.single('paymentScreenshot'),
   async (req, res) => {
     try {
@@ -510,6 +553,16 @@ router.patch(
       if (!booking) {
         return res.status(404).json({
           error: 'Booking not found.',
+        });
+      }
+
+      // Ensure the booking belongs to the logged-in customer.
+      if (
+        !booking.customerId ||
+        booking.customerId.toString() !== req.customerId.toString()
+      ) {
+        return res.status(403).json({
+          error: 'You are not authorized to submit payment for this booking.',
         });
       }
 
@@ -537,6 +590,9 @@ router.patch(
 
       booking.payment.finalAmount = finalAmount;
       booking.payment.finalScreenshotUrl = req.file.secure_url;
+
+      // Record when the customer submitted the final payment screenshot.
+      booking.payment.finalSubmittedAt = new Date();
 
       await booking.save();
 
