@@ -594,7 +594,7 @@ setUploadMessage('Replacement image uploaded successfully.');
 )}
 
 
-{booking.status === 'completed' && (
+{['completed', 'shipped', 'delivered'].includes(booking.status) && (
   <div className="panel mt-4 border border-line p-5 sm:p-6">
     <p className="text-sm text-paper-mute">
       Final Payment
@@ -605,9 +605,12 @@ setUploadMessage('Replacement image uploaded successfully.');
     </h2>
 
     <p className="mt-3 text-sm leading-6 text-paper-mute">
-      Your artwork has been completed. Please review the artwork
-      below and pay the remaining balance to proceed with shipping.
-    </p>
+  {booking.status === 'delivered'
+    ? 'Your artwork has been delivered! Thank you for choosing us.'
+    : booking.status === 'shipped'
+      ? 'Your artwork is complete, and your final payment has been confirmed. Your artwork is on its way!'
+      : 'Your artwork has been completed. Please review the artwork below and pay the remaining balance to proceed with shipping.'}
+</p>
 
     {/* Completed Artwork */}
     {booking.completedArtworkUrl && (

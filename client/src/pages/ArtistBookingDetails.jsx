@@ -202,6 +202,40 @@ const handleConfirmFinalPayment = async () => {
   }
 };
 
+const handleMarkDelivered = async () => {
+  setActionError('');
+  setActionLoading(true);
+
+  try {
+    const token = localStorage.getItem('artistToken');
+
+    const response = await fetch(
+      `${API_URL}/api/bookings/${bookingId}/deliver`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Failed to mark booking as delivered.'
+      );
+    }
+
+    setBooking(data.booking);
+  } catch (err) {
+    console.error('Mark delivered error:', err);
+    setActionError(err.message);
+  } finally {
+    setActionLoading(false);
+  }
+};
+
 const handleCompleteArtwork = async () => {
   setCompletionMessage('');
   setCompletionError('');
@@ -590,7 +624,7 @@ const handleCompleteArtwork = async () => {
 )}
 
           {/* Payment */}
-      <section className="mt-10">
+<section className="mt-10">
         <p className="kicker">
           Payment
         </p>
@@ -780,6 +814,18 @@ const handleCompleteArtwork = async () => {
           : 'Confirm Final Payment'}
       </button>
     )}
+  {booking.status === 'shipped' && (
+  <button
+    type="button"
+    onClick={handleMarkDelivered}
+    disabled={actionLoading}
+    className="mt-6 rounded-lg bg-paper px-5 py-3 text-sm font-medium text-ink transition hover:opacity-90 disabled:opacity-50"
+  >
+    {actionLoading ? 'Updating...' : 'Mark as Delivered'}
+  </button>
+)}
+
+
 
   </div>
 )}
