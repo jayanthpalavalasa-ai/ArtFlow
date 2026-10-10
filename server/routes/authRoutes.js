@@ -6,6 +6,7 @@ const { Resend } = require('resend');
 const Artist = require('../models/Artist');
 const Customer = require('../models/Customer');
 const requireAuth = require('../middleware/auth');
+const requireApprovedArtist = require('../middleware/requireApprovedArtist');
 const linkGuestBookings = require('../utils/linkGuestBookings');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -62,7 +63,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/artist/me', requireAuth, async (req, res) => {
+router.get(
+  '/artist/me',
+  requireAuth,
+  requireApprovedArtist,
+  async (req, res) => {
   try {
     const artist = await Artist.findById(req.artistId)
       .select('_id name email');

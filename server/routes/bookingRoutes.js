@@ -4,6 +4,7 @@ const router = express.Router();
 
 const { optionalAuth, requireCustomerAuth } = require('../middleware/customerAuth');
 const requireAuth = require('../middleware/auth');
+const requireApprovedArtist = require('../middleware/requireApprovedArtist');
 
 const upload = require('../config/multer');
 const Customer = require('../models/Customer');
@@ -137,7 +138,8 @@ if (!emailRegex.test(bookingEmail)) {
     }
   }
 );
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth,
+requireApprovedArtist, async (req, res) => {
   try {
     const bookings = await Booking.find().sort({ createdAt: -1 });
 
@@ -152,6 +154,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get(
   '/artist/:bookingId',
   requireAuth,
+requireApprovedArtist,
   async (req, res) => {
     try {
       const booking = await Booking.findOne({
@@ -249,7 +252,8 @@ router.get(
 );
 
 
-router.patch('/:bookingId/accept-image', requireAuth, async (req, res) => {
+router.patch('/:bookingId/accept-image', requireAuth,
+requireApprovedArtist, async (req, res) => {
   try {
     const booking = await Booking.findOne({
       bookingId: req.params.bookingId,
@@ -291,7 +295,7 @@ router.patch('/:bookingId/accept-image', requireAuth, async (req, res) => {
   }
 });
 
-router.patch('/:bookingId/reject-image', requireAuth, async (req, res) => {
+router.patch('/:bookingId/reject-image', requireAuth, requireApprovedArtist, async (req, res) => {
   try {
     const { reviewNote } = req.body;
 
@@ -449,6 +453,7 @@ router.patch('/:bookingId/deposit-payment',
 
 router.patch('/:bookingId/confirm-deposit',
   requireAuth,
+requireApprovedArtist,
   async (req, res) => {
     try {
       const booking = await Booking.findOne({
@@ -499,6 +504,7 @@ router.patch('/:bookingId/confirm-deposit',
 
 router.patch('/:bookingId/complete',
   requireAuth,
+requireApprovedArtist,
   upload.single('completedArtwork'),
   async (req, res) => {
     try {
@@ -611,6 +617,7 @@ router.patch(
 router.patch(
   '/:bookingId/confirm-final-payment',
   requireAuth,
+requireApprovedArtist,
   async (req, res) => {
     try {
       const booking = await Booking.findOne({
@@ -663,6 +670,7 @@ router.patch(
 router.patch(
   '/:bookingId/deliver',
   requireAuth,
+  requireApprovedArtist,
   async (req, res) => {
     try {
       const booking = await Booking.findOne({
