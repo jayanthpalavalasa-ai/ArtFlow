@@ -364,7 +364,27 @@ setUploadMessage('Replacement image uploaded successfully.');
   </div>
 )}
 
+{booking.requiresPriceConsultation && (
+  <div className="panel mt-4 border border-line p-5 sm:p-6">
+    <p className="text-sm text-paper-mute">
+      Custom Commission Price
+    </p>
+
+    <h2 className="mt-2 text-xl">
+      Price discussion in progress
+    </h2>
+
+    <p className="mt-3 text-sm leading-6 text-paper-mute">
+      Your commission requires a custom price. Please discuss
+      the price with the artist. Once your agreed price has
+      been confirmed, your deposit payment options will appear here.
+    </p>
+  </div>
+)}
+
 {booking.status === 'accepted' &&
+  !booking.requiresPriceConsultation &&
+  booking.totalPrice != null &&
   !booking.payment?.depositPaid && (
     <div className="panel mt-4 border border-line p-5 sm:p-6">
       <p className="text-sm text-paper-mute">
@@ -441,10 +461,6 @@ setUploadMessage('Replacement image uploaded successfully.');
     </div>
   </div>
 </div>
-   
-
-    
-  
   <div className="mt-8 border-t border-line pt-6">
   <p className="text-sm text-paper-mute">
     Upload Payment Screenshot
@@ -505,6 +521,9 @@ setUploadMessage('Replacement image uploaded successfully.');
       </div>
     </div>
   )}
+
+
+
 
 {booking.status === 'rejected' &&
   booking.images &&
@@ -803,6 +822,7 @@ setUploadMessage('Replacement image uploaded successfully.');
   </div>
 )}
 
+{!booking.requiresPriceConsultation && (
   <div className="panel mt-4 p-5 sm:p-6">
   <p className="text-sm text-paper-mute">Payment</p>
 
@@ -849,8 +869,9 @@ setUploadMessage('Replacement image uploaded successfully.');
         {booking.payment?.finalPaid ? 'Paid' : 'Not Paid'}
       </p>
     </div>
+    </div>
   </div>
-</div>
+)}
 
 {booking.preferredDeadline && (
   <div className="panel mt-4 p-5 sm:p-6">

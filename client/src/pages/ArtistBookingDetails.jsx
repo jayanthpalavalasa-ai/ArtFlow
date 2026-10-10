@@ -10,6 +10,11 @@ function ArtistBookingDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  const [agreedPrice, setAgreedPrice] = useState('');
+const [priceMessage, setPriceMessage] = useState('');
+const [priceError, setPriceError] = useState('');
+
   const [actionError, setActionError] = useState('');
   const [reviewNote, setReviewNote] = useState('');
   const [completedArtwork, setCompletedArtwork] = useState(null);
@@ -129,6 +134,52 @@ const handleRejectReference = async () => {
   } catch (err) {
     console.error('Reject reference error:', err);
     setActionError(err.message);
+  } finally {
+    setActionLoading(false);
+  }
+};
+
+const handleSavePrice = async (e) => {
+  e.preventDefault();
+
+  setPriceMessage('');
+  setPriceError('');
+
+  const price = Number(agreedPrice);
+
+  if (!Number.isFinite(price) || price <= 0) {
+    setPriceError('Please enter a valid price greater than zero.');
+    return;
+  }
+
+  try {
+    setActionLoading(true);
+
+    const response = await fetch(
+      `${API_URL}/api/bookings/${bookingId}/price`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('artistToken')}`,
+        },
+        body: JSON.stringify({
+          totalPrice: price,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to save the agreed price.');
+    }
+
+    setBooking(data.booking);
+    setAgreedPrice('');
+    setPriceMessage('Agreed price saved successfully.');
+  } catch (err) {
+    setPriceError(err.message || 'Failed to save the agreed price.');
   } finally {
     setActionLoading(false);
   }
@@ -647,6 +698,68 @@ const handleCompleteArtwork = async () => {
 
           </div>
 
+                    {/* Set Agreed Price */}
+          {booking.requiresPriceConsultation && (
+            <div className="border border-paper/10 rounded-xl p-6">
+              <p className="text-sm text-paper-mute">
+                Price Consultation
+              </p>
+
+              <h3 className="mt-2 text-lg">
+                Set Agreed Price
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-paper-mute">
+                Enter the price agreed upon with the customer after
+                discussing the commission.
+              </p>
+
+              <form
+                onSubmit={handleSavePrice}
+                className="mt-5"
+              >
+                <label
+                  htmlFor="agreed-price"
+                  className="text-sm text-paper-mute"
+                >
+                  Agreed price (₹)
+                </label>
+
+                <input
+                  id="agreed-price"
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                  value={agreedPrice}
+                  onChange={(e) => setAgreedPrice(e.target.value)}
+                  placeholder="Enter agreed price"
+                  className="mt-2 w-full rounded-lg border border-paper/10 bg-black px-4 py-3 text-paper outline-none focus:border-paper/40"
+                />
+
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="btn-solid mt-4 disabled:opacity-50"
+                >
+                  {actionLoading ? 'Saving...' : 'Save Agreed Price'}
+                </button>
+
+                {priceMessage && (
+                  <p className="mt-3 text-sm text-green-400">
+                    {priceMessage}
+                  </p>
+                )}
+
+                {priceError && (
+                  <p className="mt-3 text-sm text-red-400">
+                    {priceError}
+                  </p>
+                )}
+              </form>
+            </div>
+          )}
+
           {/* Deposit */}
           <div className="border border-paper/10 rounded-xl p-6">
 
@@ -833,7 +946,7 @@ const handleCompleteArtwork = async () => {
 </div>
 
         </div>
-      </section>
+  </section>
 
       {/* Delivery */}
       {booking.deliveryAddress && (

@@ -578,6 +578,25 @@ router.patch(
             'Final payment can only be submitted after the artwork is completed.',
         });
       }
+      if (
+  booking.totalPrice == null ||
+  !Number.isFinite(booking.totalPrice) ||
+  booking.totalPrice <= 0
+) {
+  return res.status(400).json({
+    error: 'The final price must be confirmed before submitting final payment.',
+  });
+}
+
+if (
+  !Number.isFinite(booking.payment?.depositAmount) ||
+  booking.payment.depositAmount < 0 ||
+  booking.payment.depositAmount >= booking.totalPrice
+) {
+  return res.status(400).json({
+    error: 'The deposit amount must be valid before submitting final payment.',
+  });
+}
 
       if (booking.payment.finalPaid) {
         return res.status(400).json({
@@ -705,6 +724,74 @@ router.patch(
   }
 );
 
+// Set the agreed price for a price-consultation booking
+router.patch(
+  '/:bookingId/price',
+  requireAuth,
+  requireApprovedArtist,
+  async (req, res) => {
+    try {
+      const { totalPrice } = req.body;
+
+      // Validate the submitted price
+      if (
+        typeof totalPrice !== 'number' ||
+        !Number.isFinite(totalPrice) ||
+        totalPrice <= 0
+      ) {
+        return res.status(400).json({
+          error: 'Please provide a valid commission price greater than zero.',
+        });
+      }
+
+      // Find the booking
+      const booking = await Booking.findOne({
+        bookingId: req.params.bookingId,
+      });
+
+      if (!booking) {
+        return res.status(404).json({
+          error: 'Booking not found.',
+        });
+      }
+
+      // Only bookings requiring consultation can use this endpoint
+      if (!booking.requiresPriceConsultation) {
+        return res.status(400).json({
+          error: 'This booking does not require price consultation.',
+        });
+      }
+
+      // Only set the price before payment processing begins
+      if (
+        !['pending_review', 'accepted'].includes(booking.status) ||
+        booking.payment?.depositPaid ||
+        booking.payment?.finalPaid
+      ) {
+        return res.status(400).json({
+          error: 'The price cannot be changed at this stage of the booking.',
+        });
+      }
+
+      // Save the agreed price
+      booking.totalPrice = totalPrice;
+      booking.requiresPriceConsultation = false;
+
+      await booking.save();
+
+      return res.json({
+        message: 'Commission price saved successfully.',
+        booking,
+      });
+    } catch (err) {
+      console.error('Set commission price error:', err);
+
+      return res.status(500).json({
+        error: 'Failed to save the commission price.',
+      });
+    }
+  }
+);
 
 module.exports = router;
 
